@@ -1,8 +1,8 @@
 import serial        
-import time
 
 import os
 import sys
+
 
 import numpy as np
 
@@ -11,10 +11,6 @@ import matplotlib.animation as animation
 
 import csv
 
-import re
-import threading
-
-from mpl_toolkits.mplot3d import Axes3D
 
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
@@ -23,7 +19,10 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showerror
 from threading import Thread
-import requests
+
+import pandas as pd
+
+
 
 
 
@@ -57,13 +56,15 @@ class GetData(Thread):
                     if self.column <4:
                         self.out_data[self.column].append(float(i))  # Asignamos a cada columna de los datos para pintar, la columna correspondiente del input
                     self.column = self.column + 1
-                
+                    
+                self.out_data[4].append(float(self.out_data[2][self.Nmuestras])-float(self.out_data[1][self.Nmuestras]))
             except:
                 pass
-               
+            
+            
                         
             if len(self.out_data[0]) > self.Nmuestras:
-                self.out_data[3].append((self.out_data[3][-1])+(self.out_data[0][-1])*self.TiempoMuestreo-(self.out_data[0][0])*self.TiempoMuestreo)
+                self.out_data[5].append((self.out_data[5][-1])+(self.out_data[0][-1])*self.TiempoMuestreo-(self.out_data[0][0])*self.TiempoMuestreo)
                 self.out_data[0].pop(0)
             if len(self.out_data[1]) > self.Nmuestras:
                 self.out_data[1].pop(0)
@@ -72,7 +73,9 @@ class GetData(Thread):
             if len(self.out_data[3]) > self.Nmuestras:
                 self.out_data[3].pop(0)
             if len(self.out_data[4]) > self.Nmuestras:
-                self.out_data[4].pop(0) 
+                self.out_data[4].pop(0)
+            if len(self.out_data[5]) > self.Nmuestras:
+                self.out_data[5].pop(0)
 
             
             
@@ -102,19 +105,17 @@ class Entorno(tk.Tk):
         
         self.VolumenArduino=float(self.Set['VolumenArduino'])
         self.VelocidadInicial=float(self.Set['VelocidadInicial'])
-        self.VelocidadFinal=float(self.Set['VelocidadFinal'])
+
         
-        self.Cantidad=float(self.Set['Cantidad'])
+        self.PresionMaxima=float(self.Set['PresionMaxima'])
         
-        self.TiempoPaso=float(self.Set['TiempoPaso'])
-        self.DeltaPaso=float(self.Set['DeltaPaso'])
         
         self.TiempoMuestreo=float(self.Set['TiempoMuestreo'])
         
         self.Nmuestras=int(self.SegundosMostrados/self.TiempoMuestreo)
 
         
-        self.gData = [[0] * self.Nmuestras,[0] *self.Nmuestras,[0] *self.Nmuestras,[0] *self.Nmuestras,[0] *self.Nmuestras,]
+        self.gData = [[0] * self.Nmuestras,[0] *self.Nmuestras,[0] *self.Nmuestras,[0] *self.Nmuestras,[0] *self.Nmuestras,[0] *self.Nmuestras,]
         
         #self.Puerto = self.Set[2][1]
         self.Puerto = self.Set['Puerto']
@@ -157,65 +158,72 @@ class Entorno(tk.Tk):
         
     def create_body_plot(self):
         
-        self.fig_flujo_presion_steps_volumen, (self.ax_flujo, self.ax_presion,self.ax_steps, self.ax_volumen) = plt.subplots(4,1)
-        self.fig_resistencia_compliance, (self.ax_resistencia, self.ax_compliance) = plt.subplots(2,1)
-        self.fig_resistencia_compliance_sen, (self.ax_resistencia_sen, self.ax_compliance_sen) = plt.subplots(2,1)
+        
+        
+        self.fig_flujo_presion_steps_volumen, (self.ax_flujo, self.ax_presion,self.ax_steps) = plt.subplots(3,1,figsize=(5,10))
+        self.fig_flujo_presion_steps_volumen.subplots_adjust(left  = 0.2,hspace = 0.4)
+        self.fig_resistencia_compliance, (self.ax_resistencia, self.ax_compliance) = plt.subplots(2,1,figsize=(5,10))
+        self.fig_resistencia_compliance, (self.ax_compliance) = plt.subplots(figsize=(5,10))
+        self.fig_resistencia_compliance.subplots_adjust(left  = 0.2,hspace = 0.4)
+        plt.rcdefaults()
 
         # intialize two line objects (one in each axes)
         self.line_flujo, = self.ax_flujo.plot([], [], lw=2)
         self.line_presion, = self.ax_presion.plot([], [], lw=2, color='r')
         self.line_steps, = self.ax_steps.plot([], [], lw=2, color='g')
-        self.line_volumen, = self.ax_volumen.plot([], [], lw=2, color='b')
-        self.hl_flujo_presion_steps_volumen = [self.line_flujo, self.line_presion, self.line_steps, self.line_volumen]
+        self.hl_flujo_presion_steps_volumen = [self.line_flujo, self.line_presion, self.line_steps]
         
         self.line_resistencia, = self.ax_resistencia.plot([], [], lw=2)
         self.line_compliance, = self.ax_compliance.plot([], [], lw=2, color='r')
         self.hl_resistencia_compliance = [self.line_resistencia, self.line_compliance]
+        self.hl_resistencia_compliance = [self.line_compliance]
         
-        self.line_resistencia_sen, = self.ax_resistencia_sen.plot([], [], lw=2)
-        self.line_compliance_sen, = self.ax_compliance_sen.plot([], [], lw=2, color='r')
-        self.hl_resistencia_compliance_sen = [self.line_resistencia_sen, self.line_compliance_sen]
+
         
-        self.ax_flujo.set_ylim(-1024, 1024)
+        self.ax_flujo.set_ylim(-10, 10)
         self.ax_flujo.set_xlim(0, self.SegundosMostrados)
         self.ax_flujo.grid()
+        self.ax_flujo.set_xlabel('t [s]')
+        self.ax_flujo.set_ylabel('Flujo [ml/s]')
+        self.ax_flujo.set_title('Flujo sensado')
         
-        self.ax_presion.set_ylim(0, 1024)
+        self.ax_presion.set_ylim(-2, 5)
         self.ax_presion.set_xlim(0, self.SegundosMostrados)
         self.ax_presion.grid()
+        self.ax_presion.set_xlabel('t [s]')
+        self.ax_presion.set_ylabel('Presion [kPa]')
+        self.ax_presion.set_title('Presion sensada')
         
-        self.ax_steps.set_ylim(0, 1024)
+        self.ax_steps.set_ylim(0, 5)
         self.ax_steps.set_xlim(0, self.SegundosMostrados)
         self.ax_steps.grid()
+        self.ax_steps.set_xlabel('t [s]')
+        self.ax_steps.set_ylabel('Volumen [ml]')
+        self.ax_steps.set_title('Volumen ventilado')
+
         
-        self.ax_volumen.set_ylim(0, 1024)
-        self.ax_volumen.set_xlim(0, self.SegundosMostrados)
-        self.ax_volumen.grid()
-        
-        self.ax_resistencia.set_ylim(-1024, 1024)
-        self.ax_resistencia.set_xlim(-1024, 1024)
+        self.ax_resistencia.set_ylim(-5, 5)
+        self.ax_resistencia.set_xlim(-2, 5)
         self.ax_resistencia.grid()
+        self.ax_resistencia.set_xlabel('Presion [kPa]')
+        self.ax_resistencia.set_ylabel('Flujo [ml/s]')
+        self.ax_resistencia.set_title('Flujo sensado vs Presion sensadaa')
         
-        self.ax_compliance.set_ylim(-1024, 1024)
-        self.ax_compliance.set_xlim(-1024, 1024)
+        self.ax_compliance.set_ylim(-1, 4.5)
+        self.ax_compliance.set_xlim(-2, 6.5)
         self.ax_compliance.grid()
+        self.ax_compliance.set_xlabel('Presion [kPa]')
+        self.ax_compliance.set_ylabel('Volumen  [ml]')
+        self.ax_compliance.set_title('Volumen ventilado vs Presion sensada')
         
-        self.ax_resistencia_sen.set_ylim(-1024, 1024)
-        self.ax_resistencia_sen.set_xlim(-1024, 1024)
-        self.ax_resistencia_sen.grid()
-        
-        self.ax_compliance_sen.set_ylim(-1024, 1024)
-        self.ax_compliance_sen.set_xlim(-1024, 1024)
-        self.ax_compliance_sen.grid()
-        
+
         self.canvas_flujo_presion_steps_volumen =  FigureCanvasTkAgg(self.fig_flujo_presion_steps_volumen, master=self)
         self.canvas_flujo_presion_steps_volumen.draw()
         
         self.canvas_resistencia_compliance =  FigureCanvasTkAgg(self.fig_resistencia_compliance, master=self)
         self.canvas_resistencia_compliance.draw()
         
-        self.canvas_resistencia_compliance_sen =  FigureCanvasTkAgg(self.fig_resistencia_compliance_sen, master=self)
-        self.canvas_resistencia_compliance_sen.draw()
+
 
         self.toolbar_flujo_presion_volumen = NavigationToolbar2Tk(self.canvas_flujo_presion_steps_volumen, self, pack_toolbar=False)
         self.toolbar_flujo_presion_volumen.update()
@@ -223,20 +231,19 @@ class Entorno(tk.Tk):
         self.toolbar_resistencia_compliance = NavigationToolbar2Tk(self.canvas_resistencia_compliance, self, pack_toolbar=False)
         self.toolbar_resistencia_compliance.update()
         
-        self.toolbar_resistencia_compliance_sen = NavigationToolbar2Tk(self.canvas_resistencia_compliance_sen, self, pack_toolbar=False)
-        self.toolbar_resistencia_compliance_sen.update()
+
         
         self.canvas_flujo_presion_steps_volumen.get_tk_widget().grid(column=0, row=1)
         
         self.canvas_resistencia_compliance.get_tk_widget().grid(column=1, row=1)
         
-        self.canvas_resistencia_compliance_sen.get_tk_widget().grid(column=1, row=2)
+
         
         self.ani_flujo_presion_steps_volumen = animation.FuncAnimation(self.fig_flujo_presion_steps_volumen, update_line_flujo_presion_steps_volumen, fargs=(self.hl_flujo_presion_steps_volumen, self.gData, self.SegundosMostrados, self.TiempoMuestreo),interval=50, blit=False)
         
         self.ani_resistencia_compliance = animation.FuncAnimation(self.fig_resistencia_compliance, update_line_resistencia_compliance, fargs=(self.hl_resistencia_compliance, self.gData),interval=50, blit=False)
         
-        self.ani_resistencia_compliance_sen = animation.FuncAnimation(self.fig_resistencia_compliance_sen, update_line_resistencia_compliance_sen, fargs=(self.hl_resistencia_compliance_sen, self.gData),interval=50, blit=False)
+       
  
     def create_body_frame(self):
 
@@ -259,9 +266,9 @@ class Entorno(tk.Tk):
         self.setArduino_button.grid(column=4, row=0)
         
         # Set Stop Arduino button
-        self.setArduino_button = ttk.Button(self.body, text='Stop Arduino')
-        self.setArduino_button['command'] = self._stop_arduino
-        self.setArduino_button.grid(column=5, row=0)
+        self.stopArduino_button = ttk.Button(self.body, text='Stop Arduino')
+        self.stopArduino_button['command'] = self._stop_arduino
+        self.stopArduino_button.grid(column=5, row=0)
         
         # set button
         self.set_button = ttk.Button(self.body, text='set')
@@ -282,12 +289,14 @@ class Entorno(tk.Tk):
         self.tiempo_entry.grid(column=2, row=3)
         
         
+        
+        
         #texto Volumen arduino
         self.label = ttk.Label(self.body, text='Volumen Arduino')
         self.label.grid(column=3, row=2)
         
         #entry Volumens arduino
-        self.VolumenArduino_var = tk.IntVar(value=self.Set['VolumenArduino'])
+        self.VolumenArduino_var = tk.StringVar(value=self.Set['VolumenArduino'])
         self.VolumenArduino_entry = ttk.Entry(self.body,
                                    textvariable=self.VolumenArduino_var,
                                    width=10)
@@ -307,32 +316,21 @@ class Entorno(tk.Tk):
         self.VelocidadInicial_entry.grid(column=4, row=3)
         
         #texto VelocidadInicial
-        self.label = ttk.Label(self.body, text='Velocidad Final')
+        self.label = ttk.Label(self.body, text='Presion Max')
         self.label.grid(column=5, row=2)
         
         #entry VelocidadInicial
-        self.VelocidadFinal_var = tk.StringVar(value=self.Set['VelocidadFinal'])
-        self.VelocidadFinal_entry = ttk.Entry(self.body,
-                                   textvariable=self.VelocidadFinal_var,
+        self.PresionMaxima_var = tk.StringVar(value=self.Set['PresionMaxima'])
+        self.PresionMaxima_entry = ttk.Entry(self.body,
+                                   textvariable=self.PresionMaxima_var,
                                    width=10)
 
-        self.VelocidadFinal_entry.grid(column=5, row=3)
+        self.PresionMaxima_entry.grid(column=5, row=3)
         
-        #texto Cantidad
-        self.label = ttk.Label(self.body, text='Cantidad')
-        self.label.grid(column=6, row=2)
-        
-        #entry Cantidad
-        self.Cantidad_var = tk.StringVar(value=self.Set['Cantidad'])
-        self.Cantidad_entry = ttk.Entry(self.body,
-                                   textvariable=self.Cantidad_var,
-                                   width=10)
 
-        self.Cantidad_entry.grid(column=6, row=3)
-        
         
         # attach the body frame
-        self.body.grid(column=2, row=1)
+        self.body.grid(column=1, row=0)
     
     def _conectar(self):
         # Configuramos y lanzamos el hilo encargado de leer datos del serial
@@ -370,36 +368,31 @@ class Entorno(tk.Tk):
             writer.writerow(['Puerto', str(self.Set['Puerto'])])
             writer.writerow(['VolumenArduino', str(self.Set['VolumenArduino'])])
             writer.writerow(['VelocidadInicial', str(self.Set['VelocidadInicial'])])
-            writer.writerow(['VelocidadFinal', str(self.Set['VelocidadFinal'])])
-            writer.writerow(['Cantidad', str(self.Set['Cantidad'])])
-            writer.writerow(['TiempoPaso', str(self.Set['TiempoPaso'])])
-            writer.writerow(['DeltaPaso', str(self.Set['DeltaPaso'])])
+            writer.writerow(['PresionMaxima', str(self.Set['PresionMaxima'])])
             self.file.close()
-        self.fig_flujo_presion_steps_volumen.savefig(self.path+'/fig_flujo_presion_steps_volumen.jpg')
-        self.fig_resistencia_compliance.savefig(self.path+'/resistencia_compliance.jpg')
     
     def _set_arduino(self):
         
 
-        try:
-            if float(self.VolumenArduino_var.get())>0: 
-                self.Set['VolumenArduino']=float(self.VolumenArduino_var.get())
-            if float(self.VelocidadInicial_var.get())>0: 
-                self.Set['VelocidadInicial']=float(self.VelocidadInicial_var.get())
-            if float(self.VelocidadFinal_var.get())>0: 
-                self.Set['VelocidadFinal']=float(self.VelocidadFinal_var.get())
-            if float(self.Cantidad_var.get())>0: 
-                self.Set['Cantidad']=float(self.Cantidad_var.get())    
+        if float(self.VolumenArduino_var.get())>0: 
+            self.Set['VolumenArduino']=float(self.VolumenArduino_var.get())
+        if float(self.VelocidadInicial_var.get())>0: 
+            self.Set['VelocidadInicial']=float(self.VelocidadInicial_var.get())
+        if float(self.PresionMaxima_var.get())>0: 
+            self.Set['PresionMaxima']=float(self.PresionMaxima_var.get())
+
+   
                 
-            self.Set['TiempoPaso']= 1.0/(146*self.Set['VelocidadInicial']) # ml por paso *velocidad = frecuencia // periodo=1/f    
-            self.Set['DeltaPaso']= ((1.0/(1460*self.Set['VelocidadFinal']))-self.Set['TiempoPaso']) / self.Set['Cantidad']# ml por paso *velocidad = frecuencia // periodo=1/f    
-        except:
-            pass
+        self.TiempoPaso= 1.0/(146*float(self.Set['VelocidadInicial'])) # ml por paso *velocidad = frecuencia // periodo=1/f    
+
             
-        print("Set," + str(self.Set['VolumenArduino'])+ ',' + str((self.Set['TiempoPaso']*1000000.0))+ ',' + str((self.Set['DeltaPaso']*1000000.0))+ ',' + str(self.Set['Cantidad']))
-        if self.Muestreo.is_alive():
-            self.Muestreo._enviar("Set," + str(self.Set['VolumenArduino'])+ ',' + str((self.Set['TiempoPaso']*1000000.0))+ ',' + str((self.Set['DeltaPaso']*1000000.0))+ ',' + str(self.Set['Cantidad']))
-    
+        print("Set," + str(self.Set['VolumenArduino'])+ ',' + str((self.TiempoPaso*1000000.0))+ ',' + str(self.Set['PresionMaxima']))
+        try:
+            if self.Muestreo.is_alive():
+                self.Muestreo._enviar("Set," + str(self.Set['VolumenArduino'])+ ',' + str((self.TiempoPaso*1000000.0))+ ',' + str(self.Set['PresionMaxima']))
+        except:
+            showerror(title='Error',message="Arduino no conectado")
+        
     def _stop_arduino(self):
  
         if self.Muestreo.is_alive():
@@ -425,19 +418,13 @@ class Entorno(tk.Tk):
                 self.Set['VolumenArduino']=float(self.VolumenArduino_var.get())
             if float(self.VelocidadInicial_var.get())>0: 
                 self.Set['VelocidadInicial']=float(self.VelocidadInicial_var.get())
-            if float(self.VelocidadFinal_var.get())>0: 
-                self.Set['VelocidadFinal']=float(self.VelocidadFinal_var.get())
-            if float(self.Cantidad_var.get())>0: 
-                self.Set['Cantidad']=float(self.Cantidad_var.get())    
+            if float(self.PresionMaxima_var.get())>0: 
+                self.Set['PresionMaxima']=float(self.PresionMaxima_var.get())
                 
-            self.Set['TiempoPaso']= 1.0/(146*self.Set['VelocidadInicial']) # ml por paso *velocidad = frecuencia // periodo=1/f    
-            self.Set['DeltaPaso']= ((1.0/(146*self.Set['VelocidadFinal']))-self.Set['TiempoPaso']) / self.Set['Cantidad']# ml por paso *velocidad = frecuencia // periodo=1/f
         except:
             pass
         
-        
-        
-        
+
         self._guerdar_set()
         self._restart()
         
@@ -469,10 +456,7 @@ class Entorno(tk.Tk):
                 writer.writerow(['Puerto', str(self.Set['Puerto'])])
                 writer.writerow(['VolumenArduino', str(self.Set['VolumenArduino'])])
                 writer.writerow(['VelocidadInicial', str(self.Set['VelocidadInicial'])])
-                writer.writerow(['VelocidadFinal', str(self.Set['VelocidadFinal'])])
-                writer.writerow(['Cantidad', str(self.Set['Cantidad'])])
-                writer.writerow(['TiempoPaso', str(self.Set['TiempoPaso'])])
-                writer.writerow(['DeltaPaso', str(self.Set['DeltaPaso'])])
+                writer.writerow(['PresionMaxima', str(self.Set['PresionMaxima'])])
                 self.file.close()
         except:
             showerror(title='Error',
@@ -510,20 +494,16 @@ class Entorno(tk.Tk):
 
 def update_line_flujo_presion_steps_volumen(aux, hl_flujo_presion_steps_volumen, data, SegundosMostrados, TiempoMuestreo):
     hl_flujo_presion_steps_volumen[0].set_data(np.arange(0,SegundosMostrados,TiempoMuestreo), data[0])
-    hl_flujo_presion_steps_volumen[1].set_data(np.arange(0,SegundosMostrados,TiempoMuestreo), data[1])
-    hl_flujo_presion_steps_volumen[2].set_data(np.arange(0,SegundosMostrados,TiempoMuestreo), data[2])
-    hl_flujo_presion_steps_volumen[3].set_data(np.arange(0,SegundosMostrados,TiempoMuestreo), data[3])
+    hl_flujo_presion_steps_volumen[1].set_data(np.arange(0,SegundosMostrados,TiempoMuestreo), data[4])
+    hl_flujo_presion_steps_volumen[2].set_data(np.arange(0,SegundosMostrados,TiempoMuestreo), data[3])
     return hl_flujo_presion_steps_volumen,
 
 def update_line_resistencia_compliance(aux, hl_resistencia_compliance, data):
-    hl_resistencia_compliance[0].set_data(data[1], data[0])
-    hl_resistencia_compliance[1].set_data(data[1], data[3])
+    #hl_resistencia_compliance[0].set_data(data[4], data[0])
+    hl_resistencia_compliance[0].set_data(data[4], data[3])
     return hl_resistencia_compliance,
 
-def update_line_resistencia_compliance_sen(aux, hl_resistencia_compliance_sen, data):
-    hl_resistencia_compliance_sen[0].set_data(data[1], data[4])
-    hl_resistencia_compliance_sen[1].set_data(data[1], data[2])
-    return hl_resistencia_compliance_sen,
+
 
 
 

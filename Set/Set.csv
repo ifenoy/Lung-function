@@ -1,9 +1,6 @@
-SegundosMostrados,1
+SegundosMostrados,12
 TiempoMuestreo,0.005
 Puerto,COM9
-VolumenArduino,1.0
-VelocidadInicial,10.0
-VelocidadFinal,10.0
-Cantidad,1.0
-TiempoPaso,0.0006849315068493151
-DeltaPaso,0.0
+VolumenArduino,4.0
+VelocidadInicial,5.0
+PresionMaxima,7.0

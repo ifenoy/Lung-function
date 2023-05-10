@@ -1,5 +1,0 @@
-SegundosMostrados,10
-TiempoMuestreo,0.002
-Puerto,COM3
-VolumenArduino,150
-VelocidadArduino,2000

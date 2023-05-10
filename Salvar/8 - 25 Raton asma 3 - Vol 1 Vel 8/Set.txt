@@ -1,6 +1,0 @@
-SegundosMostrados,12
-TiempoMuestreo,0.005
-Puerto,COM5
-VolumenArduino,1.0
-VelocidadInicial,8.0
-PresionMaxima,3.0

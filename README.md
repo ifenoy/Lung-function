@@ -1,0 +1,1 @@
+The PDF "Informe Proyecto Final Integrador Ezequiel Ignacio Canay" contains a detailed description of the prototype and validation experiments conducted in Spanish. A summary in English will be uploaded shortly.

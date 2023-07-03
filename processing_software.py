@@ -48,7 +48,7 @@ class Entorno(tk.Tk):
         # Salir button
         self.salir_button = ttk.Button(self.header, text='Salir')
         self.salir_button['command'] = self._quit
-        self.salir_button.grid(column=2, row=1)
+        self.salir_button.grid(column=4, row=1)
         
         
         # Entrada Label
@@ -57,14 +57,37 @@ class Entorno(tk.Tk):
                                    textvariable=self.Lebel_var,
                                    width=10)
        
-        self.Lebel_entry.grid(column=3, row=1)
+        self.Lebel_entry.grid(column=2, row=1)
         
         self.Color_Combo = ttk.Combobox(self.header,
-            values=['b','g','r','c','m','y','k','w']
+            values=['b','g','r','c','m','y','k','w'],
+            width=7
             )
-
-        self.Color_Combo.grid(column=4, row=1)
         
+        self.Color_Combo.grid(column=3, row=1)
+        
+        #texto presiones
+        self.label = ttk.Label(self.header, text='Presiones C')
+        self.label.grid(column=1, row=2)
+        
+         #entry PresionCMin
+        self.PresionCMin_var = tk.StringVar(value="0.25")
+        self.PresionCMin_entry = ttk.Entry(self.header,
+                                    textvariable=self.PresionCMin_var,
+                                    width=10)
+
+        self.PresionCMin_entry.grid(column=2, row=2)
+        
+         #entry PresionCMin
+        self.PresionCMax_var = tk.StringVar(value="0.8")
+        self.PresionCMax_entry = ttk.Entry(self.header,
+                                    textvariable=self.PresionCMax_var,
+                                    width=10)
+
+        self.PresionCMax_entry.grid(column=3, row=2)
+        
+
+
         # attach the header frame
         self.header.grid(column=0, row=0, sticky=tk.NSEW)
         
@@ -207,8 +230,8 @@ class Entorno(tk.Tk):
             self.index_min_presion.append(self.ciclos_presion[i].index(self.min_presion[i]))
             self.index_max_volumen.append(int((np.where(self.ciclos_volumen_integrado[i] == self.max_volumen[i])[0])[0]))
 
-            self.index_080_max_presion.append((np.abs(self.ciclos_presion_np[self.index_max_presion[i]:] - 0.8).argmin())+self.index_max_presion[i])
-            self.index_025_presion.append((np.abs(self.ciclos_presion_np[self.index_max_presion[i]:]  - 0.25).argmin())+self.index_max_presion[i])
+            self.index_080_max_presion.append((np.abs(self.ciclos_presion_np[self.index_max_presion[i]:] - float(self.PresionCMax_var.get())).argmin())+self.index_max_presion[i])
+            self.index_025_presion.append((np.abs(self.ciclos_presion_np[self.index_max_presion[i]:]  - float(self.PresionCMin_var.get())).argmin())+self.index_max_presion[i])
             
             self.pendientes.append((self.ciclos_volumen_integrado[i][self.index_025_presion[i]]-self.ciclos_volumen_integrado[i][self.index_080_max_presion[i]])/(self.ciclos_presion[i][self.index_025_presion[i]]-self.ciclos_presion[i][self.index_080_max_presion[i]]))
             self.ordenada_origen.append(self.ciclos_volumen_integrado[i][self.index_025_presion[i]] - self.pendientes[i] * self.ciclos_presion[i][self.index_025_presion[i]])
@@ -258,6 +281,8 @@ class Entorno(tk.Tk):
             self.ax_presion_volumen.plot(self.ciclos_presion[i],self.ciclos_volumen_integrado[i],self.Color_Combo.get())
             
         self.ax_presion_volumen.plot(aux_t,  aux_t* self.pendientes[0] + (self.ordenada_origen[0]),'k--')
+        self.ax_presion_volumen.plot(float(self.PresionCMax_var.get()),float(self.PresionCMax_var.get())*self.pendientes[0] + (self.ordenada_origen[0]),'k*')
+        self.ax_presion_volumen.plot(float(self.PresionCMin_var.get()),float(self.PresionCMin_var.get())*self.pendientes[0] + (self.ordenada_origen[0]),'k*')
 
 
 
@@ -460,8 +485,8 @@ class Entorno(tk.Tk):
 
            self.index_max_volumen.append(int((np.where(self.ciclos_volumen_integrado[i] == self.max_volumen[i])[0])[0]))
 
-           self.index_080_max_presion.append((np.abs(self.ciclos_presion_np[self.index_max_presion[i]:] - 0.8).argmin())+self.index_max_presion[i])
-           self.index_025_presion.append((np.abs(self.ciclos_presion_np[self.index_max_presion[i]:]  - 0.25).argmin())+self.index_max_presion[i])
+           self.index_080_max_presion.append((np.abs(self.ciclos_presion_np[self.index_max_presion[i]:] - float(self.PresionCMax_var.get())).argmin())+self.index_max_presion[i])
+           self.index_025_presion.append((np.abs(self.ciclos_presion_np[self.index_max_presion[i]:]  - float(self.PresionCMin_var.get())).argmin())+self.index_max_presion[i])
 
            self.pendientes.append((self.ciclos_volumen_integrado[i][self.index_025_presion[i]]-self.ciclos_volumen_integrado[i][self.index_080_max_presion[i]])/(self.ciclos_presion[i][self.index_025_presion[i]]-self.ciclos_presion[i][self.index_080_max_presion[i]]))
            self.ordenada_origen.append(self.ciclos_volumen_integrado[i][self.index_025_presion[i]] - self.pendientes[i] * self.ciclos_presion[i][self.index_025_presion[i]])
@@ -496,7 +521,8 @@ class Entorno(tk.Tk):
             self.ax_presion_volumen.plot(self.ciclos_presion[i],self.ciclos_volumen_integrado[i],self.Color_Combo.get())
         
         self.ax_presion_volumen.plot(aux_t,  aux_t* self.pendientes[0] + (self.ordenada_origen[0]),'k--')
-
+        self.ax_presion_volumen.plot(float(self.PresionCMax_var.get()),float(self.PresionCMax_var.get())*self.pendientes[0] + (self.ordenada_origen[0]),'k*')
+        self.ax_presion_volumen.plot(float(self.PresionCMin_var.get()),float(self.PresionCMin_var.get())*self.pendientes[0] + (self.ordenada_origen[0]),'k*')
 
         self.ax_presion_volumen.set_ylabel('Volumen [ml]')
         self.ax_presion_volumen.set_xlabel('Presión [kPa]')

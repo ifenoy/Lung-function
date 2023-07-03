@@ -1,7 +1,7 @@
 #ifndef __NUITKA_GLOBAL_CONSTANTS_H__
 #define __NUITKA_GLOBAL_CONSTANTS_H__
 
-extern PyObject *global_constants[88];
+extern PyObject *global_constants[87];
 // ()
 #define const_tuple_empty global_constants[0]
 // {}
